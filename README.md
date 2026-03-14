@@ -1,4 +1,4 @@
-# Machine Learning for Anti-Money Laundering Detection
+# 🔍 Machine Learning for Anti-Money Laundering Detection
 ### From Transaction Classification to Network-Level Signal Discovery
 
 > Detecting suspicious financial activity across 4.5M+ transactions using classical ML, XGBoost, and dimensionality reduction — with a graph-based research extension exploring network topology as a predictive signal.
@@ -57,19 +57,6 @@ Source: [Kaggle – IBM AML Dataset](https://www.kaggle.com/datasets/ealtman2019
 
 ---
 
-## 🗂️ Repository Structure
-
-```
-├── notebook.ipynb                  # Main analysis notebook
-├── presentation.pdf                # Slide deck
-├── README.md
-├── .gitignore
-└── data/
-    └── HI-Small_Trans.csv          # Download from Kaggle (not committed — too large)
-```
-
----
-
 ## 🔬 Methodology
 
 ### 1. Data Preprocessing & Cleaning
@@ -87,22 +74,16 @@ Source: [Kaggle – IBM AML Dataset](https://www.kaggle.com/datasets/ealtman2019
 Three behavioral dimensions were engineered:
 
 **Transaction Behavior**
-- Transaction frequency per account
-- Average transaction amount
-- Deviation from historical baseline
-- Transaction type distribution
+- Transaction frequency per account, average transaction amount
+- Deviation from historical baseline, transaction type distribution
 
 **Network Behavior**
-- Number of unique counterparties
-- Circular money flow patterns
-- Repeated transaction loops
-- Account fan-in / fan-out ratio
+- Number of unique counterparties, account fan-in / fan-out ratio
+- Circular money flow patterns, repeated transaction loops
 
 **Temporal Behavior**
-- Burst transaction windows
-- Transactions at unusual hours
-- Day-of-week anomalies
-- Time gap between transfers
+- Burst transaction windows, transactions at unusual hours
+- Day-of-week anomalies, time gap between transfers
 
 ### 3. Handling Class Imbalance
 - Applied **undersampling**: matched non-fraud samples to fraud sample count (4,281 each)
@@ -135,11 +116,24 @@ Three behavioral dimensions were engineered:
 
 ---
 
-## 🔬 Research Proposal: Transaction Network Topology as Predictive Signal
+## 📊 Key Results
+
+- **XGBoost** achieved **89% accuracy** and **F1 = 0.85** on the balanced test set
+- PCA visualization confirmed the data is **not linearly separable** — validating the use of ensemble tree methods
+- `Timestamp` showed positive correlation with laundering labels; `Payment Format` showed negative correlation
+- Undersampling to 4,281 samples per class was necessary to address the ~1000:1 class imbalance
+
+---
+
+## 🧠 Research Proposal: Transaction Network Topology as Predictive Signal
+
+The PCA result raised a deeper question — if fraud and legitimate transactions are visually indistinguishable at the individual level, **are we even looking at the right unit of analysis?**
+
+Money laundering isn't just a transaction problem. It's a network problem. Criminals don't move money in a single hop — they route it through chains of intermediary accounts, creating structures that look normal transaction-by-transaction but are unmistakably suspicious when viewed as a whole. A laundering ring leaves a fingerprint in the *shape* of the transaction graph, even when every individual transfer appears clean.
+
+This is what motivated the research extension: **extract structural signals from the transaction network itself**, rather than from individual rows of data.
 
 > *Can graph-based features extracted from financial transaction networks generate predictive signals for abnormal financial behavior — earlier and more robustly than individual transaction features?*
-
-The PCA finding motivated a deeper question: **what if the real signal lives in the network structure, not individual transactions?** Laundering rings often form tightly connected subgraphs — centrality and PageRank can expose coordinated financial activity *before* it becomes detectable at the transaction level.
 
 ### Proposed Pipeline
 
@@ -157,47 +151,18 @@ Step 4: Generate Signals
         Embeddings fed into classifier to flag suspicious account clusters
 ```
 
-### Network Feature Signals
+### What Each Network Signal Catches
 
-| Feature | Signal |
-|---------|--------|
-| **PageRank** | Dormant account suddenly becomes structurally central → suspicious activation |
-| **Betweenness Centrality** | High betweenness + low transaction volume → potential layering account |
-| **Clustering Coefficient** | High clustering + circular flows → potential laundering ring |
-| **Transaction Cycles** | Funds returning to origin after multiple hops → hallmark of financial layering |
+| Feature | What It Measures | The Signal |
+|---------|-----------------|------------|
+| **PageRank** | Structural importance in the network | A dormant account that suddenly becomes central is worth investigating — legitimate low-activity accounts don't do that |
+| **Betweenness Centrality** | How often an account bridges senders and receivers | High betweenness + low transaction volume is a fingerprint of a *layering account* — one that exists just to pass money through |
+| **Clustering Coefficient** | How tightly connected an account's neighbors are | A dense, self-referential cluster of accounts transacting heavily with each other → potential laundering ring |
+| **Transaction Cycles** | Funds returning to origin after multiple hops | Money completing a circuit is the hallmark of financial layering |
 
----
+### Why This Is Novel
 
-## 📊 Key Results
-
-- **XGBoost** achieved **89% accuracy** and **F1 = 0.85** on the balanced test set
-- PCA visualization confirmed the data is **not linearly separable** — validating the use of ensemble tree methods
-- `Timestamp` showed positive correlation with laundering labels; `Payment Format` showed negative correlation
-- Undersampling to 4,281 samples per class was necessary to address the ~1000:1 class imbalance
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-```bash
-pip install pandas numpy matplotlib seaborn plotly scikit-learn category_encoders xgboost torch
-```
-
-### Running the Notebook
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/money-laundering-detection.git
-   cd money-laundering-detection
-   ```
-
-2. Download the dataset from [Kaggle](https://www.kaggle.com/datasets/ealtman2019/ibm-transactions-for-anti-money-laundering-aml) and place `HI-Small_Trans.csv` in the `data/` folder.
-
-3. Open the notebook:
-   ```bash
-   jupyter notebook notebook.ipynb
-   ```
-   Or run directly in [Google Colab](https://colab.research.google.com/).
+Individual transaction classifiers — even good ones like XGBoost — are fundamentally reactive. They wait for a suspicious transaction to occur and then flag it. Graph-based signals can catch suspicious *structures forming* before any individual transaction becomes obviously anomalous. It's an earlier warning system, operating at a higher level of abstraction — and one that's much harder for bad actors to evade, because disguising network topology is far more difficult than disguising transaction amounts.
 
 ---
 
@@ -211,15 +176,26 @@ pip install pandas numpy matplotlib seaborn plotly scikit-learn category_encoder
 
 ## 🔮 Future Work
 
-- **Dynamic Graph Signals** — track how centrality evolves over rolling windows to detect emerging laundering rings before transaction patterns crystallize
-- **GNN-Based Detection** — Graph Neural Networks learn directly from the transaction graph, building structural embeddings end-to-end without manual feature design
+- **Dynamic Graph Signals** — track how centrality scores evolve over rolling time windows. A *rising* PageRank is more suspicious than a high one
+- **GNN-Based Detection** — Graph Neural Networks learn structural embeddings end-to-end directly from the transaction graph, without manual feature engineering
 - **Temporal Attention Models** — apply transformer attention to account transaction sequences, treating financial history as language and laundering as anomalous grammar
+
+---
+
+## 🚀 Getting Started
+
+```bash
+pip install pandas numpy matplotlib seaborn plotly scikit-learn category_encoders xgboost torch
+```
+
+1. Clone the repo and download `HI-Small_Trans.csv` from [Kaggle](https://www.kaggle.com/datasets/ealtman2019/ibm-transactions-for-anti-money-laundering-aml), place it in a `data/` folder
+2. Open `notebook.ipynb` in Jupyter or Google Colab
 
 ---
 
 ## 👤 Author
 
-Madhumitha Rajagopal 
+Madhumitha Rajagopal
 
 ---
 
