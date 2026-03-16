@@ -7,7 +7,7 @@
 
 ## 📌 Overview
 
-Money laundering undermines the integrity of financial systems and facilitates corruption, terrorism, and organized crime. Traditional rule-based systems fail at scale — criminals easily adapt by smurfing large sums, routing funds through intermediary chains, and exploiting static thresholds.
+Money laundering undermines the integrity of financial systems and facilitates corruption, terrorism, and organized crime. Traditional rule-based systems fail at scale — criminals easily adapt by smurfing large sums, routing funds through intermediary chains, and exploiting static thresholds. 
 
 This project takes a data-driven approach to the problem:
 
